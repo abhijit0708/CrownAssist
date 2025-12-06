@@ -1,0 +1,233 @@
+{
+  "name": "CrownAssist",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 9
+            }
+          ]
+        }
+      },
+      "id": "de2030b8-5999-4b59-93d3-6a621fb9ee7c",
+      "name": "Monday Morning Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        1360,
+        176
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "id-1",
+              "name": "recipientEmail",
+              "value": "abhipatil120708@gmail.com",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "6b3c2c7e-80d5-4f43-8d6d-e93d710fa715",
+      "name": "Workflow Configuration",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1584,
+        176
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "returnAll": true,
+        "filters": {
+          "readStatus": "both",
+          "receivedAfter": "={{ $now.minus({ days: 1 }).toISO() }}"
+        }
+      },
+      "id": "b38911f0-444c-42bb-abe1-403a9f2aaaee",
+      "name": "Get Weekend Emails",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        1808,
+        176
+      ],
+      "webhookId": "8fd75cf7-06b6-42bd-86dc-79c0dc15ad67",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "ivJCU0hQQUkdPvIA",
+          "name": "Gmail account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "options": {}
+      },
+      "id": "fbf02aed-5722-4be0-84f3-f180564abd33",
+      "name": "Combine Email Data",
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        2032,
+        176
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.data }}",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "You are an executive assistant analyzing yesterday's emails to identify action items and priorities."
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "id": "cbdf8404-1644-407d-8504-6ac54061d579",
+      "name": "Analyze Emails with GPT-4o-mini",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        2256,
+        176
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Workflow Configuration').first().json.recipientEmail }}",
+        "subject": "Daily Email Summary - Action Items & Priorities",
+        "message": "={{ $json.text }}",
+        "options": {}
+      },
+      "id": "ab24bf6e-e010-4814-864b-0dd6df90b28e",
+      "name": "Send Summary Email",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        2608,
+        176
+      ],
+      "webhookId": "95a72548-9ad0-4634-9197-ecfe6fcfec33",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "ivJCU0hQQUkdPvIA",
+          "name": "Gmail account 3"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "3e535a5b-02c0-4d78-ab9f-f6d9b72e14cc",
+      "name": "Google Gemini",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        2336,
+        400
+      ],
+      "credentials": {
+        "googlePalmApi": {
+          "id": "A7t79FduYcav0py3",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Monday Morning Trigger": {
+      "main": [
+        [
+          {
+            "node": "Workflow Configuration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Workflow Configuration": {
+      "main": [
+        [
+          {
+            "node": "Get Weekend Emails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Weekend Emails": {
+      "main": [
+        [
+          {
+            "node": "Combine Email Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Combine Email Data": {
+      "main": [
+        [
+          {
+            "node": "Analyze Emails with GPT-4o-mini",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze Emails with GPT-4o-mini": {
+      "main": [
+        [
+          {
+            "node": "Send Summary Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Analyze Emails with GPT-4o-mini",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false
+  },
+  "versionId": "16bdc7b9-3d72-40ba-9ae4-2b7282a2e03e",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "4900f044718bf090f221c4ce636feba508667385c76bead144326c69b4082981"
+  },
+  "id": "HmqD96ZrUsLlaYZe",
+  "tags": []
+}
